@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width">
+    <title>Interactive Visualization</title>
+    <script src="https://cdn.plot.ly/plotly-2.26.0.min.js"></script>
+    <style>
+        body {
+            background-color: rgb(188, 143, 174);
+        }
+        p, h2 {
+            text-align: center;
+        }
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            padding-bottom: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <h2>Data Visualisation of Patients Pathology Tests</h2>
+
+    <div class="controls">
+       
+        <div>
+            <p>Outcome</p>
+            <select name="Outcomes" id="outcome">
+                <option value="Ferritin">Ferritin</option>
+                <option value="Troponin">Troponin</option>
+                <option value="Neutrophils">Neutrophils</option>
+                <option value="Lymphocytes">Lymphocytes</option>
+                <option value="CRP">CRP</option>
+            </select>
+        </div>
+
+        <div>
+            <p>Patient Characteristics</p>
+            <select name="Group" id="group" multiple>
+                <option value="COVID">COVID</option>
+                <option value="old">Old</option>
+                <option value="male">Male</option>
+                <option value="white">White</option>
+            </select>
+        </div>
+
+        <div>
+            <p>Plot Type</p>
+            <select id="plotType">
+                <option value="bar">Bar</option>
+                <option value="scatter">Scatter</option>
+                <option value="box">Box</option>
+                <option value="pie">Pie</option>
+            </select>
+        </div>
+    </div>
+
+    <div id="myDiv"></div>
+
+    <script>
+        const data = [{"COVID":0,"old":0,"male":0,"white":0,"Ferritin":80.7962,"Troponin":15.0776,"Neutrophils":2.9622,"Lymphocytes":1.009,"CRP":72.698,"sample":88},
+{"COVID":1,"old":0,"male":0,"white":0,"Ferritin":78.2594,"Troponin":14.5232,"Neutrophils":6.5465,"Lymphocytes":1.0095,"CRP":67.4789,"sample":23},
+{"COVID":0,"old":1,"male":0,"white":0,"Ferritin":80.1051,"Troponin":15.0196,"Neutrophils":2.9655,"Lymphocytes":1.0044,"CRP":73.603,"sample":33},
+{"COVID":1,"old":1,"male":0,"white":0,"Ferritin":79.1869,"Troponin":14.8105,"Neutrophils":21.2747,"Lymphocytes":0.6642,"CRP":76.098,"sample":38},
+{"COVID":0,"old":0,"male":1,"white":0,"Ferritin":80.293,"Troponin":15.2164,"Neutrophils":2.9697,"Lymphocytes":1.0025,"CRP":85.2045,"sample":83},
+{"COVID":1,"old":0,"male":1,"white":0,"Ferritin":82.4478,"Troponin":15.3914,"Neutrophils":11.2725,"Lymphocytes":0.86,"CRP":92.2727,"sample":24},
+{"COVID":0,"old":1,"male":1,"white":0,"Ferritin":81.2627,"Troponin":15.1298,"Neutrophils":3.0922,"Lymphocytes":1.0068,"CRP":87.3127,"sample":35},
+{"COVID":1,"old":1,"male":1,"white":0,"Ferritin":81.1032,"Troponin":15.2505,"Neutrophils":17.6567,"Lymphocytes":0.71,"CRP":85.317,"sample":64},
+{"COVID":0,"old":0,"male":0,"white":1,"Ferritin":80.3315,"Troponin":15.1271,"Neutrophils":2.9658,"Lymphocytes":1.0038,"CRP":72.0842,"sample":468},
+{"COVID":1,"old":0,"male":0,"white":1,"Ferritin":81.9102,"Troponin":14.701,"Neutrophils":8.5887,"Lymphocytes":0.9345,"CRP":74.6818,"sample":176},
+{"COVID":0,"old":1,"male":0,"white":1,"Ferritin":80.7869,"Troponin":15.1487,"Neutrophils":3.0018,"Lymphocytes":0.9997,"CRP":76.5904,"sample":195},
+{"COVID":1,"old":1,"male":0,"white":1,"Ferritin":81.2481,"Troponin":14.9856,"Neutrophils":20.0563,"Lymphocytes":0.6955,"CRP":77.0856,"sample":246},
+{"COVID":0,"old":0,"male":1,"white":1,"Ferritin":80.5322,"Troponin":14.9284,"Neutrophils":2.9699,"Lymphocytes":1.0067,"CRP":84.4454,"sample":353},
+{"COVID":1,"old":0,"male":1,"white":1,"Ferritin":80.7558,"Troponin":15.1274,"Neutrophils":9.952,"Lymphocytes":0.8898,"CRP":83.6312,"sample":190},
+{"COVID":0,"old":1,"male":1,"white":1,"Ferritin":81.1269,"Troponin":15.0935,"Neutrophils":2.9539,"Lymphocytes":0.9993,"CRP":89.6938,"sample":133},
+{"COVID":1,"old":1,"male":1,"white":1,"Ferritin":79.9424,"Troponin":14.9526,"Neutrophils":21.6836,"Lymphocytes":0.6442,"CRP":89.0144,"sample":241}
+];
+
+const labelMap = {
+            COVID: ["COVID+", "COVID-"],
+            old: ["Old", "Young"],
+            male: ["Male", "Female"],
+            white: ["White", "Non-White"]
+        };
+        
+        window.onload = function () {
+            document.getElementById("outcome").addEventListener("change", plotData);
+            document.getElementById("group").addEventListener("change", plotData);
+            document.getElementById("plotType").addEventListener("change", plotData);
+            plotData(); 
+        }
+
+        function plotData() {
+            const outcome = document.getElementById("outcome").value;
+            const groupValues = Array.from(document.getElementById("group").selectedOptions).map(option => option.value);
+            const plotType = document.getElementById("plotType").value;
+
+            const selectedCharacteristic = groupValues[0] || 'COVID';
+            const xLabels = labelMap[selectedCharacteristic] || ["Group 1", "Group 2"];
+
+            const filteredData = data.filter(obj => groupValues.every(group => obj[group] === 1));
+            const nonFilteredData = data.filter(obj => groupValues.every(group => obj[group] === 0));
+
+            const filteredOutcomeValues = filteredData.map(obj => obj[outcome]);
+            const nonFilteredOutcomeValues = nonFilteredData.map(obj => obj[outcome]);
+
+            
+            let plot = [];
+            let layout = { title: { text: `Distribution of ${outcome}` } };
+
+            if (plotType === 'bar') {
+            
+                const y1 = weightedAve(filteredOutcomeValues, filteredData.map(d => d.sample));
+                const y2 = weightedAve(nonFilteredOutcomeValues, nonFilteredData.map(d => d.sample));
+
+                plot = [{
+                    x: xLabels,
+                    y: [y1, y2],
+                    type: 'bar'
+                }];
+            } else if (plotType === 'scatter') {
+              
+                plot = [
+                    {
+                        x: Array(filteredOutcomeValues.length).fill(xLabels[0]),
+                        y: filteredOutcomeValues,
+                        mode: 'markers',
+                        name: xLabels[0],
+                        marker: { color: 'blue' }
+                    },
+                    {
+                        x: Array(nonFilteredOutcomeValues.length).fill(xLabels[1]),
+                        y: nonFilteredOutcomeValues,
+                        mode: 'markers',
+                        name: xLabels[1],
+                        marker: { color: 'red' }
+                    }
+                ];
+            } else if (plotType === 'box') {
+              
+                plot = [
+                    {
+                        y: filteredOutcomeValues,
+                        type: 'box',
+                        name: xLabels[0]
+                    },
+                    {
+                        y: nonFilteredOutcomeValues,
+                        type: 'box',
+                        name: xLabels[1]
+                    }
+                ];
+            } else if (plotType === 'pie') {
+               
+                plot = [{
+                    values: [filteredData.length, nonFilteredData.length],
+                    labels: xLabels,
+                    type: 'pie'
+                }];
+                layout = { title: { text: `Sample Count Comparison for ${outcome}` } };
+            }
+
+            Plotly.newPlot('myDiv', plot, layout);
+        }
+
+        function weightedAve(values, weights) {
+            const totalWeight = weights.reduce((a, b) => a + b, 0);
+            const weightedSum = values.reduce((sum, val, idx) => sum + val * weights[idx], 0);
+            return weightedSum / totalWeight;
+        }
+    </script>
+</body>
+</html>
+
